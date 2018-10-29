@@ -68,6 +68,52 @@ public class MapsViewModel extends ObservableViewModel {
     @Bindable
     @DependsOnField(name = BR.julianDay, fieldIds = {BR.date})
     public double getJulianDay() {
-        return AstroUtils.julianDay (mDate);
+        return AstroUtils.julianDay(mDate);
     }
+
+    @Bindable
+    @DependsOnField(name = BR.julianCenturies, fieldIds = {BR.date})
+    public double getJulianCenturies() {
+        return AstroUtils.julianDay(mDate);
+    }
+
+    @Bindable
+    @DependsOnField(name = BR.obliquityOfTheEcliptic, fieldIds = {BR.julianCenturies})
+    public double getObliquityOfTheEcliptic() { return AstroUtils.obliquityOfTheEcliptic(getJulianCenturies()); }
+
+    @Bindable
+    @DependsOnField(name = BR.sunEclipticLongitude, fieldIds = {BR.julianCenturies})
+    public double getSunEclipticLongitude() { return AstroUtils.sunEclipticLongitude(getJulianCenturies()); }
+
+    @Bindable
+    @DependsOnField(name = BR.sunEclipticLatitude, fieldIds = {BR.julianCenturies})
+    public double getSunEclipticLatitude() { return AstroUtils.sunEclipticLatitude(getJulianCenturies()); }
+
+    @Bindable
+    @DependsOnField(name = BR.moonEclipticLongitude, fieldIds = {BR.julianCenturies})
+    public double getMoonEclipticLongitude() { return AstroUtils.moonEclipticLongitude(getJulianCenturies()); }
+
+    @Bindable
+    @DependsOnField(name = BR.moonEclipticLatitude, fieldIds = {BR.julianCenturies})
+    public double getMoonEclipticLatitude() { return AstroUtils.moonEclipticLatitude(getJulianCenturies()); }
+
+    @Bindable
+    @DependsOnField(name = BR.moonPhaseAngle, fieldIds = {BR.moonEclipticLongitude, BR.sunEclipticLongitude})
+    public double getMoonPhaseAngle() { return AstroUtils.moonPhaseAngle(getMoonEclipticLongitude(), getSunEclipticLongitude()); }
+
+    @Bindable
+    @DependsOnField(name = BR.moonDeclination, fieldIds = {BR.moonEclipticLongitude, BR.moonEclipticLatitude, BR.obliquityOfTheEcliptic})
+    public double getMoonDeclination() { return AstroUtils.moonDeclination(getMoonEclipticLatitude(), getMoonEclipticLongitude(), getObliquityOfTheEcliptic(), true); }
+
+    @Bindable
+    @DependsOnField(name = BR.moonRightAscension, fieldIds = {BR.moonEclipticLongitude, BR.moonEclipticLatitude, BR.obliquityOfTheEcliptic})
+    public double getMoonRightAscension() { return AstroUtils.moonRightAscension(getMoonEclipticLatitude(), getMoonEclipticLongitude(), getObliquityOfTheEcliptic(), true); }
+
+    @Bindable
+    @DependsOnField(name = BR.sunDeclination, fieldIds = {BR.sunEclipticLongitude, BR.obliquityOfTheEcliptic})
+    public double getSunDeclination() { return AstroUtils.sunDeclination(getSunEclipticLongitude(), getObliquityOfTheEcliptic(), true); }
+
+    @Bindable
+    @DependsOnField(name = BR.sunRightAscension, fieldIds = {BR.sunEclipticLongitude, BR.obliquityOfTheEcliptic})
+    public double getSunRightAscension() { return AstroUtils.sunRightAscension(getSunEclipticLongitude(), getObliquityOfTheEcliptic(), true); }
 }
