@@ -24,7 +24,11 @@ import android.widget.DatePicker;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.davidbriard.suncalc.databinding.FragmentMagicHoursBinding;
 import com.davidbriard.suncalc.databinding.FragmentMapsBinding;
+import com.davidbriard.suncalc.databinding.FragmentRiseAndSetBinding;
+import com.davidbriard.suncalc.databinding.FragmentSunAndMoonBinding;
+import com.davidbriard.suncalc.databinding.FragmentTwilightsBinding;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -266,6 +270,141 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback,
             return rootView;
         }
     }
+
+
+    public static class MagicHoursFragment extends Fragment {
+    /**
+     * The fragment argument representing the section number for this
+     * fragment.
+     */
+    private static final String ARG_DATE = "date";
+    private static final String ARG_LOCATION = "location";
+    private MapsViewModel mViewModel;
+
+    public MagicHoursFragment() {
+    }
+
+    /**
+     * Returns a new instance of this fragment for the given section
+     * number.
+     */
+    public static MagicHoursFragment newInstance(MapsViewModel viewModel) {
+        MagicHoursFragment fragment = new MagicHoursFragment();
+        Bundle args = new Bundle();
+        args.putSerializable(ARG_DATE, viewModel.getDate());
+        args.putParcelable(ARG_LOCATION, viewModel.getLocation());
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+
+        FragmentMagicHoursBinding binding = DataBindingUtil.inflate(inflater,
+                R.layout.fragment_magic_hours, container, false);
+
+        //mViewModel = ViewModelProviders.of(getActivity()).get(MapsViewModel.class);
+
+        binding.setMapsViewModel(mViewModel);
+        View view = binding.getRoot();
+        return view;
+        }
+    }
+
+    public static class TwilightsFragment extends Fragment {
+        /**
+         * The fragment argument representing the section number for this
+         * fragment.
+         */
+        private MapsViewModel mViewModel;
+
+        public TwilightsFragment() {
+        }
+
+        /**
+         * Returns a new instance of this fragment for the given section
+         * number.
+         */
+        public static TwilightsFragment newInstance(MapsViewModel viewModel) {
+            TwilightsFragment fragment = new TwilightsFragment();
+            return fragment;
+        }
+
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                                 Bundle savedInstanceState) {
+
+            FragmentTwilightsBinding binding = DataBindingUtil.inflate(inflater,
+                    R.layout.fragment_twilights, container, false);
+            binding.setMapsViewModel(mViewModel);
+            View view = binding.getRoot();
+            return view;
+        }
+    }
+
+    public static class SunAndMoonFragment extends Fragment {
+        /**
+         * The fragment argument representing the section number for this
+         * fragment.
+         */
+        private MapsViewModel mViewModel;
+
+        public SunAndMoonFragment() {
+        }
+
+        /**
+         * Returns a new instance of this fragment for the given section
+         * number.
+         */
+        public static SunAndMoonFragment newInstance(MapsViewModel viewModel) {
+            SunAndMoonFragment fragment = new SunAndMoonFragment();
+            return fragment;
+        }
+
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                                 Bundle savedInstanceState) {
+
+            FragmentSunAndMoonBinding binding = DataBindingUtil.inflate(inflater,
+                    R.layout.fragment_sun_and_moon, container, false);
+            binding.setMapsViewModel(mViewModel);
+            View view = binding.getRoot();
+            return view;
+        }
+    }
+
+    public static class RiseAndSetFragment extends Fragment {
+        /**
+         * The fragment argument representing the section number for this
+         * fragment.
+         */
+        private MapsViewModel mViewModel;
+
+        public RiseAndSetFragment() {
+        }
+
+        /**
+         * Returns a new instance of this fragment for the given section
+         * number.
+         */
+        public static RiseAndSetFragment newInstance(MapsViewModel viewModel) {
+            RiseAndSetFragment fragment = new RiseAndSetFragment();
+            return fragment;
+        }
+
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                                 Bundle savedInstanceState) {
+
+            FragmentRiseAndSetBinding binding = DataBindingUtil.inflate(inflater,
+                    R.layout.fragment_rise_and_set, container, false);
+            binding.setMapsViewModel(mViewModel);
+            View view = binding.getRoot();
+            return view;
+        }
+    }
+
     /**
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
      * one of the sections/tabs/pages.
@@ -280,13 +419,32 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback,
         public Fragment getItem(int position) {
             // getItem is called to instantiate the fragment for the given page.
             // Return a PlaceholderFragment (defined as a static inner class below).
-            return PlaceholderFragment.newInstance(position + 1);
+            Fragment fragment = null;
+            if (position == 0) {
+                fragment = RiseAndSetFragment.newInstance(mViewModel);
+                ((RiseAndSetFragment) fragment).mViewModel = mViewModel;
+            }
+            else if (position == 1) {
+                fragment = SunAndMoonFragment.newInstance(mViewModel);
+                ((SunAndMoonFragment) fragment).mViewModel = mViewModel;
+            }
+            else if (position == 2) {
+                fragment = TwilightsFragment.newInstance(mViewModel);
+                ((TwilightsFragment) fragment).mViewModel = mViewModel;
+            }
+            else if (position == 3) {
+                fragment = MagicHoursFragment.newInstance(mViewModel);
+                ((MagicHoursFragment) fragment).mViewModel = mViewModel;
+            }
+            else
+                fragment = PlaceholderFragment.newInstance(position + 1);
+            return fragment;
         }
 
         @Override
         public int getCount() {
             // Show 3 total pages.
-            return 3;
+            return 4;
         }
     }
 }

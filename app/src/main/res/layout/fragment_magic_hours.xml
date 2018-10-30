@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <data>
+        <variable
+            name="mapsViewModel"
+            type="com.davidbriard.suncalc.MapsViewModel" />
+    </data>
+
+    <TableLayout
+        xmlns:tools="http://schemas.android.com/tools"
+        tools:context=".MapsFragment$MagicHoursFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <TableRow>
+            <TextView android:layout_weight="1" />
+            <TextView android:layout_weight="1" android:text="Dawn" />
+            <TextView android:layout_weight="1" android:text="Dusk" />
+        </TableRow>
+        <TableRow>
+            <TextView android:layout_weight="1" android:text="Golden hour" />
+            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.sunDeclination), default=monDecl}" />
+            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.sunRightAscension), default=monDecl}" />
+        </TableRow>
+        <TableRow>
+            <TextView android:layout_weight="1" android:text="Blue hour" />
+            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.moonDeclination), default=monDecl}" />
+            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.moonRightAscension), default=monDecl}" />
+        </TableRow>
+    </TableLayout>
+</layout>

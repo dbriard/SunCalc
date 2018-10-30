@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <data>
+        <variable
+            name="mapsViewModel"
+            type="com.davidbriard.suncalc.MapsViewModel" />
+    </data>
+
+    <TableLayout
+        xmlns:tools="http://schemas.android.com/tools"
+        tools:context=".MapsFragment$SunAndMoonFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <TableRow>
+            <TextView android:layout_weight="1" />
+            <TextView android:layout_weight="1" android:text="Azimuth" />
+            <TextView android:layout_weight="1" android:text="Elevation" />
+            <TextView android:layout_weight="1" android:text="Phase" />
+        </TableRow>
+        <TableRow>
+            <TextView android:layout_weight="1" android:text="Sun" />
+            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.sunAzimuth), default=az}" />
+            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.sunElevation), default=el}" />
+            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.moonPhaseAngle), default=monDecl}" />
+        </TableRow>
+        <TableRow>
+            <TextView android:layout_weight="1" android:text="Moon" />
+            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.sunAzimuth), default=monDecl}" />
+            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.sunElevation), default=monDecl}" />
+            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.moonPhaseAngle), default=moonPhaseAngle}" />
+        </TableRow>
+    </TableLayout>
+</layout>

@@ -55,13 +55,30 @@ class ObservableViewModel extends ViewModel implements Observable {
                         list = new ArrayList<Integer>();
                         dictionary.put(propertyName, list);
                     }
-                    list.add(myAnnotation.name());
-                    //Field field2 = BR.class.getDeclaredField(field.getName().replace);
+
+                    Integer fieldName = getFieldId(field.getName());
+                    list.add(fieldName);
                 }
             }
         }
 
         return dictionary;
+    }
+
+    private int getFieldId(String brName)
+    {
+        brName = brName.replace("get", "");
+        brName = brName.substring(0, 1).toLowerCase() + brName.substring(1);
+
+        try
+        {
+            Field f = BR.class.getDeclaredField(brName);
+            return f.getInt(null);
+        }
+        catch (Exception ex)
+        {
+            return -1;
+        }
     }
 
     @Override
