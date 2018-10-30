@@ -26,8 +26,8 @@
         </TableRow>
         <TableRow>
             <TextView android:layout_weight="1" android:text="Moon" />
-            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.sunAzimuth), default=monDecl}" />
-            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.sunElevation), default=monDecl}" />
+            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.sunDeclination), default=monDecl}" />
+            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.eqOfTime), default=monDecl}" />
             <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.moonPhaseAngle), default=moonPhaseAngle}" />
         </TableRow>
     </TableLayout>

@@ -142,10 +142,13 @@ public class MapsViewModel extends ObservableViewModel {
 
     @Bindable
     @DependsOnField(fieldIds = {BR.date, BR.latitude, BR.longitude})
-    public double getSunAzimuth() { return AstroUtils.sunCoords(getDate(), getLatitude(), getLongitude(), 0 ).azimuth; }
+    public double getSunAzimuth() { return AstroUtils.sunCoords(getDate(), getLatitude(), getLongitude(), 1 ).azimuth; }
 
     @Bindable
     @DependsOnField(fieldIds = {BR.date, BR.latitude, BR.longitude})
-    public double getSunElevation() { return AstroUtils.sunCoords(getDate(), getLatitude(), getLongitude(), 0 ).elevation; }
+    public double getSunElevation() { return AstroUtils.sunCoords(getDate(), getLatitude(), getLongitude(), 1 ).elevation; }
 
+    @Bindable
+    @DependsOnField(fieldIds = {BR.julianCenturies})
+    public double getEqOfTime() { return AstroUtils.equationOfTime(getJulianCenturies()); }
 }
