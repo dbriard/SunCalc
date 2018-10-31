@@ -9,7 +9,6 @@ public final class AzEl implements Parcelable {
         public AzEl createFromParcel(Parcel in) {
             return new AzEl(in);
         }
-
         public AzEl[] newArray(int size) {
             return new AzEl[size];
         }
@@ -19,13 +18,17 @@ public final class AzEl implements Parcelable {
     public final double elevation;
 
     public AzEl(double az, double el) {
-        if (-180.0D <= az && az < 180.0D) {
-            this.azimuth = az;
-        } else {
-            this.azimuth = ((az - 180.0D) % 360.0D + 360.0D) % 360.0D - 180.0D;
-        }
-
+        az %= 360.0;
+        if (az < 0)
+            az += 360;
+        this.azimuth = az;
         this.elevation = Math.max(-90.0D, Math.min(90.0D, el));
+
+        //if (-180.0D <= az && az < 180.0D) {
+        //    this.azimuth = az;
+        //} else {
+        //    this.azimuth = ((az - 180.0D) % 360.0D + 360.0D) % 360.0D - 180.0D;
+        //}
     }
 
     // Parcelling part

@@ -4,6 +4,7 @@ import com.google.android.gms.maps.model.LatLng;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.format.DateTimeFormat;
 
 public class AstroUtils {
 
@@ -24,30 +25,6 @@ public class AstroUtils {
     {
         return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);
     }
-
-    /*public static double dayOfYearFromJD(double jd)
-    {
-        int z = (int)Math.floor(jd + 0.5);
-        double f = (jd + 0.5) - z;
-        double A = z;
-        if (z < 2299161) {
-            A = z;
-        } else {
-            double alpha = Math.floor((z - 1867216.25)/36524.25);
-            A = z + 1 + alpha - Math.floor(alpha/4);
-        }
-        double B = A + 1524;
-        int C = (int)Math.floor((B - 122.1)/365.25);
-        int D = (int)Math.floor(365.25 * C);
-        int E = (int)Math.floor((B - D)/30.6001);
-        int day = B - D - (int)Math.floor(30.6001 * E) + f;
-        int month = (E < 14) ? E - 1 : E - 13;
-        int year = (month > 2) ? C - 4716 : C - 4715;
-
-        int k = (isLeapYear(year) ? 1 : 2);
-        double doy = Math.floor((275 * month)/9) - k * Math.floor((month + 9)/12) + day -30;
-        return doy;
-    }*/
 
     /// Returns the number of Julian centuries since Jan 1, 2000, 12 UT
     public static double julianCenturies(double jd) {
@@ -636,20 +613,6 @@ public class AstroUtils {
         return equationOfTime(eccentricityOfEarthOrbit(t), obliquityOfTheEcliptic(t), sunMeanLongitude(t), sunMeanAnomaly(t));
     }
 
-    public static double hourAngleSunrise(double lat, double solarDec)
-    {
-        double latRad = Math.toRadians(lat);
-        double sdRad  = Math.toRadians(solarDec);
-        double HAarg = (Math.cos(Math.toRadians(90.833))/(Math.cos(latRad)*Math.cos(sdRad))-Math.tan(latRad) * Math.tan(sdRad));
-        double HA = Math.acos(HAarg);
-        return HA;		// in radians (for sunset, use -HA)
-    }
-
-    public static double hourAngleSunset(double lat, double solarDec)
-    {
-        return -hourAngleSunrise(lat, solarDec);
-    }
-
     public static double timeOfDay(DateTime date)
     {
         return date.getSecondOfDay() / 86400.0;
@@ -669,7 +632,8 @@ public class AstroUtils {
     }
 
     public static double azimuth(double H, double latitude, double dec) {
-        return Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(latitude) - Math.tan(dec) * Math.cos(latitude));
+        //return Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(latitude) - Math.tan(dec) * Math.cos(latitude));
+        return Math.atan2(-Math.sin(H), Math.cos(latitude) * Math.tan(dec) - Math.sin(latitude) * Math.cos(H));
     }
 
     public static double elevation(double H, double latitude, double dec) {
@@ -739,39 +703,203 @@ public class AstroUtils {
     {
         double t = julianCenturies(date);
         double eqTime = equationOfTime(t);
-        double theta  = sunDeclination(t);
-
+        double dec  = sunDeclination(t);
         double solarTimeFix = solarTimeFix(eqTime, longitude, zone);
-        double localTime = date.getMinuteOfDay() / 1440.0;
+        double localTime = date.getMinuteOfDay();
         double trueSolarTime = (localTime + solarTimeFix) % 1440;
-        //double earthRadVec = sunRadVector(t);
         double ha = hourAngle(trueSolarTime);
-        double zenith = Math.toDegrees(zenith(Math.toRadians(ha), Math.toRadians(latitude),  Math.toRadians(theta)));
-        double azimuth =  Math.toDegrees(azimuth(Math.toRadians(ha), Math.toRadians(latitude),  Math.toRadians(theta))) % 360;
+        double zenith = Math.toDegrees(zenith(Math.toRadians(ha), Math.toRadians(latitude),  Math.toRadians(dec)));
+        double azimuth =  Math.toDegrees(azimuth(Math.toRadians(ha), Math.toRadians(latitude),  Math.toRadians(dec))) % 360;
         if (azimuth < 0)
             azimuth += 360;
-        double exoatmElevation = approximateAtmosphericRefractionCorrection(90.0 - zenith);
-        double refractionCorrection = 0;
+        double refractionCorrection = approximateAtmosphericRefractionCorrection(90.0 - zenith);
         double solarZen = zenith - refractionCorrection;
         double el = 90 - solarZen; // ou 90 - zenith + atmCorr
         return new AzEl(azimuth, el);
     }
 
+    public static AzEl moonCoords(DateTime date, double latitude, double longitude, double zone)
+    {
+        double t = julianCenturies(date);
+        double eqTime = equationOfTime(t);
+        double dec  = moonDeclination(t);
+        double ra = moonRightAscension(t);
 
-    /*public static double SunElevation(this DateTimeOffset date, double latitude, double longitude)
-    {
-        double julianCycle = date.julianCenturies();
-        var trueSolarTime = TrueSolarTime(date, EqOfTime(julianCycle), longitude);
-        double ha = HourAngle(trueSolarTime);
-        return SolarElevationCorrected(SolarElevation(latitude, SunDeclination(julianCycle), ha));
+
+        double solarTimeFix = solarTimeFix(eqTime, longitude, zone);
+        double localTime = date.getMinuteOfDay();
+        double trueSolarTime = (localTime + solarTimeFix) % 1440;
+        double ha = hourAngle(trueSolarTime);
+
+        double zenith = Math.toDegrees(zenith(Math.toRadians(ha), Math.toRadians(latitude),  Math.toRadians(dec)));
+        double azimuth =  Math.toDegrees(azimuth(Math.toRadians(ha), Math.toRadians(latitude),  Math.toRadians(dec))) % 360;
+        if (azimuth < 0)
+            azimuth += 360;
+        double refractionCorrection = approximateAtmosphericRefractionCorrection(90.0 - zenith);
+        double solarZen = zenith - refractionCorrection;
+        double el = 90 - solarZen; // ou 90 - zenith + atmCorr
+        return new AzEl(azimuth, el);
     }
-    public static double SunAzimuth(this DateTimeOffset date, double latitude, double longitude)
+
+    public static double solarNoon(DateTime date, double longitude, double timezoneOffset)
     {
-        double julianCycle = date.julianCenturies();
-        var trueSolarTime = TrueSolarTime(date, EqOfTime(julianCycle), longitude);
-        double ha = HourAngle(trueSolarTime);
-        double elevation = SolarElevationCorrected(SolarElevation(latitude, SunDeclination(julianCycle), ha));
-        double zenith = 90.0 - elevation;
-        return SolarAzimuth(ha, latitude, SunDeclination(julianCycle), zenith);
+        double jd = julianDay(date);
+        double tnoon = julianCenturies(jd - longitude/360);
+        double eqTime = equationOfTime(tnoon); // estimation
+        double solNoonOffset = 720.0 - (longitude * 4) - eqTime; // in minutes
+        double newt = julianCenturies(jd + solNoonOffset/1440.0);
+        eqTime = equationOfTime(newt); // more precise
+
+        double solNoonLocal = 720 - (longitude * 4) - eqTime + (timezoneOffset*60.0);// in minutes
+        //if(dst) solNoonLocal += 60.0
+
+        solNoonLocal %= 1440;
+        if (solNoonLocal < 0)
+            solNoonLocal += 1440;
+
+        return solNoonLocal;
+    }
+
+    public static double hourAngleSunrise(double lat, double solarDec)
+    {
+        double latRad = Math.toRadians(lat);
+        double sdRad  = Math.toRadians(solarDec);
+        double HAarg = (Math.cos(Math.toRadians(90.833))/(Math.cos(latRad)*Math.cos(sdRad))-Math.tan(latRad) * Math.tan(sdRad));
+        double HA = Math.acos(HAarg);
+        return HA;		// in radians (for sunset, use -HA)
+    }
+
+    public static double hourAngleFromElevation(double lat, double dec, double elevation)
+    {
+        double latRad = Math.toRadians(lat);
+        double sdRad  = Math.toRadians(dec);
+        double HAarg = (Math.cos(Math.toRadians(90 - elevation))/(Math.cos(latRad)*Math.cos(sdRad))-Math.tan(latRad) * Math.tan(sdRad));
+        double HA = Math.acos(HAarg);
+        return HA;		// in radians (for sunset, use -HA)
+    }
+
+    public static double hourAngleSunset(double lat, double solarDec)
+    {
+        return -hourAngleSunrise(lat, solarDec);
+    }
+
+    public static DateTime getDateFromJulianDay(double jd)
+    {
+        long millis = DateTimeUtils.fromJulianDay(jd);
+        return new DateTime(millis);
+    }
+
+    public static DateTime getDateFromJulianDay(double jd, double minutes)
+    {
+        return getDateFromJulianDay(jd + minutes / 1440.0);
+    }
+
+    public static double sunriseUTC(boolean rise, double jd, double latitude, double longitude) {
+        double t = julianCenturies(jd);
+        double eqTime = equationOfTime(t);
+        double solarDec = sunDeclination(t);
+        double hourAngle = hourAngleSunrise(latitude, solarDec);
+        hourAngle = Math.toDegrees(hourAngle);
+        if (!rise) hourAngle = -hourAngle;
+        double delta = longitude + hourAngle;
+        double timeUTC = 720 - (4.0 * delta) - eqTime;    // in minutes
+        return timeUTC;
+    }
+
+    public static DateTime sunrise(DateTime date, double latitude, double longitude, double timeZoneOffset)
+    {
+        date = date.withTime(0, 0, 0, 0);
+
+        double jd = julianDay(date);
+        //double julianCycle = julianCenturies(date);
+        //double solarNoon = solarNoon(date, longitude, 1);
+        //double solarNoon2 = SiderealTime(julianCycle) / 15.0 - EqOfTime(julianCycle) / 60 + date.Offset.TotalHours - longitude / 15.0;
+        //solarNoon2 /= 24.0;
+        double sunriseUTC = sunriseUTC(true, jd, latitude, longitude);
+        double newSunriseUTC = sunriseUTC(true, jd + sunriseUTC/1440.0, latitude, longitude);
+
+        //if (true) // newSunriseUTC valid
+        //{
+            double timeLocal = newSunriseUTC +timeZoneOffset * 60;
+
+            double riseT = julianCenturies(jd + newSunriseUTC/1440.0);
+            //double riseAz = calcAzEl(0, riseT, timeLocal, latitude, longitude, timezone)
+
+            //timeLocal += ((dst) ? 60.0 : 0.0);
+            if ( (timeLocal >= 0.0) && (timeLocal < 1440.0) ) {
+                return getDateFromJulianDay(jd, timeLocal);
+            } else  {
+                double jday = jd;
+                double increment = ((timeLocal < 0) ? 1 : -1);
+                while ((timeLocal < 0.0)||(timeLocal >= 1440.0)) {
+                    timeLocal += increment * 1440.0;
+                    jday -= increment;
+                }
+                return getDateFromJulianDay(jday, timeLocal);
+            }
+        //}
+
+
+        //double ha = HourAngleFromElevation(latitude, sunDeclination(julianCycle), -0.833);
+        //double sunrise = SunriseTimeLST(solarNoon, ha);
+        //return date.Midnight().AddDays(sunrise);
+    }
+
+
+    public static DateTime sunset(DateTime date, double latitude, double longitude, double timeZoneOffset)
+    {
+        date = date.withTime(0, 0, 0, 0);
+        double jd = julianDay(date);
+        //double julianCycle = julianCenturies(date);
+        //double solarNoon = solarNoon(date, longitude, 1);
+        //double solarNoon2 = SiderealTime(julianCycle) / 15.0 - EqOfTime(julianCycle) / 60 + date.Offset.TotalHours - longitude / 15.0;
+        //solarNoon2 /= 24.0;
+        double sunriseUTC = sunriseUTC(false,jd, latitude, longitude);
+        double newSunriseUTC = sunriseUTC(false,jd + sunriseUTC/1440.0, latitude, longitude);
+
+        //if (true) // newSunriseUTC valid
+        //{
+        double timeLocal = newSunriseUTC +timeZoneOffset * 60;
+
+        double riseT = julianCenturies(jd + newSunriseUTC/1440.0);
+        //double riseAz = calcAzEl(0, riseT, timeLocal, latitude, longitude, timezone)
+
+        //timeLocal += ((dst) ? 60.0 : 0.0);
+        if ( (timeLocal >= 0.0) && (timeLocal < 1440.0) ) {
+            return getDateFromJulianDay(jd, timeLocal);
+        } else  {
+            double jday = jd;
+            double increment = ((timeLocal < 0) ? 1 : -1);
+            while ((timeLocal < 0.0)||(timeLocal >= 1440.0)) {
+                timeLocal += increment * 1440.0;
+                jday -= increment;
+            }
+            return getDateFromJulianDay(jday, timeLocal);
+        }
+    }
+
+    /*public static double dayOfYearFromJD(double jd)
+    {
+        int z = (int)Math.floor(jd + 0.5);
+        double f = (jd + 0.5) - z;
+        double A = z;
+        if (z < 2299161) {
+            A = z;
+        } else {
+            double alpha = Math.floor((z - 1867216.25)/36524.25);
+            A = z + 1 + alpha - Math.floor(alpha/4);
+        }
+        double B = A + 1524;
+        int C = (int)Math.floor((B - 122.1)/365.25);
+        int D = (int)Math.floor(365.25 * C);
+        int E = (int)Math.floor((B - D)/30.6001);
+        int day = B - D - (int)Math.floor(30.6001 * E) + f;
+        int month = (E < 14) ? E - 1 : E - 13;
+        int year = (month > 2) ? C - 4716 : C - 4715;
+
+        int k = (isLeapYear(year) ? 1 : 2);
+        double doy = Math.floor((275 * month)/9) - k * Math.floor((month + 9)/12) + day -30;
+        return doy;
     }*/
+
 }

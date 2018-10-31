@@ -8,6 +8,7 @@ import com.google.android.gms.maps.model.LatLng;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormat;
 
 public class MapsViewModel extends ObservableViewModel {
 
@@ -149,6 +150,30 @@ public class MapsViewModel extends ObservableViewModel {
     public double getSunElevation() { return AstroUtils.sunCoords(getDate(), getLatitude(), getLongitude(), 1 ).elevation; }
 
     @Bindable
+    @DependsOnField(fieldIds = {BR.date, BR.latitude, BR.longitude})
+    public double getMoonAzimuth() { return AstroUtils.moonCoords(getDate(), getLatitude(), getLongitude(), 1 ).azimuth; }
+
+    @Bindable
+    @DependsOnField(fieldIds = {BR.date, BR.latitude, BR.longitude})
+    public double getMoonElevation() { return AstroUtils.moonCoords(getDate(), getLatitude(), getLongitude(), 1 ).elevation; }
+
+    @Bindable
     @DependsOnField(fieldIds = {BR.julianCenturies})
     public double getEqOfTime() { return AstroUtils.equationOfTime(getJulianCenturies()); }
+
+    @Bindable
+    @DependsOnField(fieldIds = {BR.date, BR.latitude, BR.longitude})
+    public DateTime getSunrise() { return AstroUtils.sunrise(getDate(), getLatitude(), getLongitude(), 1 ); }
+
+    @Bindable
+    @DependsOnField(fieldIds = {BR.date, BR.latitude, BR.longitude})
+    public DateTime getSunset() { return AstroUtils.sunset(getDate(), getLatitude(), getLongitude(), 1 ); }
+
+    @Bindable
+    @DependsOnField(fieldIds = {BR.sunrise})
+    public String getSunriseTime() { return getSunrise().toLocalTime().toString() ; }
+
+    @Bindable
+    @DependsOnField(fieldIds = {BR.sunrise})
+    public String getSunsetTime() { return getSunset().toLocalTime().toString() ; }
 }

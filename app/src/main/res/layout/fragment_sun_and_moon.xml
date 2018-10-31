@@ -20,15 +20,15 @@
         </TableRow>
         <TableRow>
             <TextView android:layout_weight="1" android:text="Sun" />
-            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.sunAzimuth), default=az}" />
-            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.sunElevation), default=el}" />
-            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.moonPhaseAngle), default=monDecl}" />
+            <TextView android:layout_weight="1" android:text="@{@string/format_angle(mapsViewModel.sunAzimuth), default=0.0}" />
+            <TextView android:layout_weight="1" android:text="@{@string/format_angle(mapsViewModel.sunElevation), default=0.0}" />
+            <TextView android:layout_weight="1" android:text="@{@string/format_angle(mapsViewModel.moonPhaseAngle), default=0.0}" />
         </TableRow>
         <TableRow>
             <TextView android:layout_weight="1" android:text="Moon" />
-            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.sunDeclination), default=monDecl}" />
-            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.eqOfTime), default=monDecl}" />
-            <TextView android:layout_weight="1" android:text="@{String.valueOf(mapsViewModel.moonPhaseAngle), default=moonPhaseAngle}" />
+            <TextView android:layout_weight="1" android:text="@{@string/format_angle(mapsViewModel.moonAzimuth), default=0.0}" />
+            <TextView android:layout_weight="1" android:text="@{@string/format_angle(mapsViewModel.moonElevation), default=0.0}" />
+            <TextView android:layout_weight="1" android:text="@{@string/format_angle(mapsViewModel.moonPhaseAngle), default=0.0}" />
         </TableRow>
     </TableLayout>
 </layout>
