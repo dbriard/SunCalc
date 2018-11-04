@@ -14,8 +14,8 @@ public final class AzEl implements Parcelable {
         }
     };
 
-    public final double azimuth;
-    public final double elevation;
+    public double azimuth;
+    public double elevation;
 
     public AzEl(double az, double el) {
         az %= 360.0;
@@ -66,9 +66,15 @@ public final class AzEl implements Parcelable {
         }
     }
 
+    public double zenith()
+    {
+        return 90 - elevation;
+    }
+
     public final String toString() {
         double var1 = this.azimuth;
         double var3 = this.elevation;
-        return (new StringBuilder(60)).append("az/el: (").append(var1).append(",").append(var3).append(")").toString();
+        double var4 = this.zenith();
+        return (new StringBuilder(60)).append("az/el/ze: (").append(var1).append(",").append(var3).append(",").append(var4).append(")").toString();
     }
 }

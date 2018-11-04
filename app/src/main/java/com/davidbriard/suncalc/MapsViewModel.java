@@ -10,16 +10,34 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MapsViewModel extends ObservableViewModel {
 
     private DateTime mDate;
     private LatLng mLocation;
     private DateTimeZone mTimeZone;
 
+    /*public static List<String> GetZones(String country) {
+        List<String> zones = new ArrayList<>();
+
+        for (String i : DateTimeZone.getAvailableIDs()) {
+            if (i.startsWith(country)) {
+                zones.add(i);
+            }
+        }
+        return zones;
+    }*/
     public MapsViewModel() {
+        //mDate = new DateTime(1991, 5, 19, 14    ,0,0,0);
         mDate = new DateTime(2018, 10, 30, 10, 0, 0, 0);
         mLocation = new LatLng(48.86, 2.34);
         mTimeZone = DateTimeZone.getDefault();
+
+       // List<String> zones = GetZones("France");
+
+    //    AzEl moon = AstroUtils.moonCoords(mDate, 48.86, 2.34, 1);
     }
 
     @Bindable
@@ -170,8 +188,16 @@ public class MapsViewModel extends ObservableViewModel {
     public DateTime getSunset() { return AstroUtils.sunset(getDate(), getLatitude(), getLongitude(), 1 ); }
 
     @Bindable
+    @DependsOnField(fieldIds = {BR.date, BR.latitude, BR.longitude})
+    public DateTime getMoonrise() { return AstroUtils.moonrise(getDate(), getLatitude(), getLongitude(), 4 ); }
+
+    @Bindable
     @DependsOnField(fieldIds = {BR.sunrise})
     public String getSunriseTime() { return getSunrise().toLocalTime().toString() ; }
+
+    @Bindable
+    @DependsOnField(fieldIds = {BR.moonrise})
+    public String getMoonriseTime() { return getMoonrise().toLocalTime().toString() ; }
 
     @Bindable
     @DependsOnField(fieldIds = {BR.sunrise})

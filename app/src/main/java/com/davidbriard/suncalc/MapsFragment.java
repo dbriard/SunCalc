@@ -6,6 +6,7 @@ import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.pm.PackageManager;
 import android.databinding.DataBindingUtil;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -35,6 +36,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -164,9 +167,23 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback,
         mMap = googleMap;
 
         // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
+        LatLng sydney = mViewModel.getLocation();//new LatLng(-34, 151);
+        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Paris"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+
+
+        LatLng sun = SpatialUtils.destinationCoordinate(sydney, mViewModel.getSunAzimuth(), 10000, DistanceUnits.Meters );
+        LatLng moon = SpatialUtils.destinationCoordinate(sydney, mViewModel.getMoonAzimuth(), 10000, DistanceUnits.Meters );
+
+        Polyline line = mMap.addPolyline(new PolylineOptions()
+                .add(sydney, sun)
+                .width(12)
+                .color(Color.YELLOW));
+
+        line = mMap.addPolyline(new PolylineOptions()
+                .add(sydney, moon)
+                .width(12)
+                .color(Color.BLUE));
 
         if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {

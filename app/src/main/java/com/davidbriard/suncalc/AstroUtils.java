@@ -1,10 +1,10 @@
 package com.davidbriard.suncalc;
 
-import com.google.android.gms.maps.model.LatLng;
+import android.support.annotation.FloatRange;
+import android.support.annotation.Size;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
-import org.joda.time.format.DateTimeFormat;
 
 public class AstroUtils {
 
@@ -391,14 +391,14 @@ public class AstroUtils {
         return moonAngularDiameter(angularDiameter) / moonMeanAngularDiameter;
     }
 
-    public static double sunAngularDiameter(double distanceKm)
+    public static double sunAngularDiameter(double angleKm)
     {
-        return 2 * Math.toDegrees(Math.atan(sunRadius / distanceKm));
+        return 2 * Math.toDegrees(Math.atan(sunRadius / angleKm));
     }
 
-    public static double moonAngularDiameter(double distanceKm)
+    public static double moonAngularDiameter(double angleKm)
     {
-        return 206265.0 * 3474.8 / distanceKm;
+        return 206265.0 * 3474.8 / angleKm;
     }
 
     public static final double sunDiameter = 1392000; // km
@@ -414,6 +414,8 @@ public class AstroUtils {
         double jc3 = jc * jc2;
         return 280.46061837 + 360.98564736629 * d + 0.000387933 * jc2 - jc3 / 38710000.0;
     }
+
+
 
     public static double greenwichMeanSiderealTime(double jc)
     {
@@ -718,14 +720,126 @@ public class AstroUtils {
         return new AzEl(azimuth, el);
     }
 
+    public static AzEl convertEquatorialToHorizontal(double declination, double hourAngle, double latitude) // lat of observer
+    {
+        double lat = Math.toRadians(latitude);
+        //http://www.geoastro.de/elevazmoon/basics/meeus.htm#horizon
+        double dec = Math.toRadians(declination); // delta
+        double ha = Math.toRadians(hourAngle); // tau
+        double sin_lat = Math.sin(lat); // beta
+        double cos_lat = Math.cos(lat);
+        double cos_ha = Math.cos(ha);
+        double sin_el = sin_lat * Math.sin(dec) + cos_lat * Math.cos(dec) * cos_ha;
+        double el = Math.toDegrees(Math.asin(sin_el));
+        double az = Math.toDegrees(Math.atan2(-Math.sin(ha), cos_lat * Math.tan(dec) - sin_lat * cos_ha));
+        return new AzEl(az, el);
+    }
+
+    public static double moonHorizontalParallax(double moonangleKm) // horizontal parallax (arcseconds), Meeus S. 263
+    {
+        return 8.794 / (moonangleKm / 149.59787e6);
+    }
+
+    public static double parallaxInAltitude(double moonangle, double elevation)
+    {
+        double horParal = moonHorizontalParallax(moonangle) / 3600; // arcseconds to degrees
+        double horParalRad = Math.toRadians(horParal);
+        elevation = Math.toRadians(elevation);
+        double sin_p = Math.cos(elevation) * Math.sin(horParalRad); // parallax in altitude (degrees)
+        double p = Math.toDegrees(Math.asin(sin_p));
+        return p;
+    }
+    public static double moonElevationCorrected(double moonangle, double elevation)
+    {
+        double parallax = parallaxInAltitude(moonangle, elevation);
+        double refraction = moonRefraction(elevation);
+
+        return elevation - parallax + refraction;
+    }
+    public static boolean isSupermoon(double moonangleKm) // horizontal parallax (arcseconds), Meeus S. 263
+    {
+        return moonangleKm <= 360000;
+    }
+    public static boolean isMicromoon(double moonangleKm) // horizontal parallax (arcseconds), Meeus S. 263
+    {
+        return moonangleKm >= 405000;
+    }
+    public static double moonRefraction(double elevation) // The refraction R is calculated by Saemundsson's formula
+    {
+        double num = elevation + (10.3 / (elevation + 5.11));
+        num = Math.toRadians(num);
+        double R = 1.02 / Math.tan(num); // arcminutes
+        R = R / 60; // arcminiutes to degrees
+        return R;
+    }
+
+    public static RaDec convertEclipticToEquatorial(double eclipticLatitude, double eclipticLongitude, double obliquityOfTheEcliptic, double localSiderealTime)
+    {
+        double lng = Math.toRadians(eclipticLongitude);
+        double lat = Math.toRadians(eclipticLatitude);
+        double obliq = Math.toRadians(obliquityOfTheEcliptic);
+
+        double sin_e = Math.sin(obliq);
+        double cos_e = Math.cos(obliq);
+
+        double sin_lng = Math.sin(lng);
+        double cos_lng = Math.cos(lng);
+
+        double sin_decl = Math.sin(lat) * cos_e + Math.cos(lat) * sin_e * sin_lng;
+
+        double dec = Math.toDegrees(Math.asin(sin_decl));
+
+        double num = sin_lng * cos_e - Math.tan(lat) * sin_e;
+        double tan_ra = num / cos_lng;
+
+        double ra = cos_lng < 0 ? Math.PI + Math.atan(tan_ra) : num < 0 ? 2 * Math.PI + Math.atan(tan_ra) : Math.atan(tan_ra);
+        ra = Math.toDegrees(ra);
+        // ha = local sidereal time - right ascension
+        // ou
+        // ha = Greenwich sidereal time - observer's longitude - right ascension
+
+        return new RaDec(dec, ra, localSiderealTime - ra);
+    }
+
+    public static AzEl MoonHorizontalCoordinates(double jc, double latitude, double longitude)
+    {
+        double eclipticLatitude = moonEclipticLatitude(jc);
+        double eclipticLongitide = moonEclipticLongitude(jc);
+        double obliquityOfTheEcliptic = obliquityOfTheEcliptic(jc);
+        double lmst = localMeanSiderealTime(jc, longitude);
+
+        RaDec eq = convertEclipticToEquatorial(eclipticLatitude, eclipticLongitide, obliquityOfTheEcliptic, lmst);
+
+        AzEl ho = convertEquatorialToHorizontal(eq.declination, eq.hourAngle, latitude);
+        double angle = moonGeocentricDistance(jc);
+        ho.elevation = moonElevationCorrected(angle, ho.elevation);
+
+        return ho;
+    }
+
     public static AzEl moonCoords(DateTime date, double latitude, double longitude, double zone)
     {
+
         double t = julianCenturies(date);
-        double eqTime = equationOfTime(t);
+        AzEl res = MoonHorizontalCoordinates(t, latitude, longitude);
+
+       // double eqTime = equationOfTime(t);
         double dec  = moonDeclination(t);
         double ra = moonRightAscension(t);
 
+        double theta0 = greenwichMeanSiderealTime(t);
+        double theta = localMeanSiderealTime(t,longitude);
 
+        double localHourAngle = (theta - ra) % 360; // tau
+        if (localHourAngle < 0)
+            localHourAngle += 360;
+
+        // convert decl, ha to horizontal coordinates
+        AzEl azel = convertEquatorialToHorizontal(dec, localHourAngle,latitude);
+
+        azel.elevation = moonElevationCorrected(moonGeocentricDistance(t), azel.elevation);
+        return azel;
+/*
         double solarTimeFix = solarTimeFix(eqTime, longitude, zone);
         double localTime = date.getMinuteOfDay();
         double trueSolarTime = (localTime + solarTimeFix) % 1440;
@@ -738,8 +852,10 @@ public class AstroUtils {
         double refractionCorrection = approximateAtmosphericRefractionCorrection(90.0 - zenith);
         double solarZen = zenith - refractionCorrection;
         double el = 90 - solarZen; // ou 90 - zenith + atmCorr
-        return new AzEl(azimuth, el);
+        return new AzEl(azimuth, el);*/
     }
+
+
 
     public static double solarNoon(DateTime date, double longitude, double timezoneOffset)
     {
@@ -773,9 +889,10 @@ public class AstroUtils {
     {
         double latRad = Math.toRadians(lat);
         double sdRad  = Math.toRadians(dec);
-        double HAarg = (Math.cos(Math.toRadians(90 - elevation))/(Math.cos(latRad)*Math.cos(sdRad))-Math.tan(latRad) * Math.tan(sdRad));
-        double HA = Math.acos(HAarg);
-        return HA;		// in radians (for sunset, use -HA)
+        double altRad = Math.toRadians(elevation);
+        double HAarg = (Math.sin(altRad)/(Math.cos(latRad)*Math.cos(sdRad))-Math.tan(latRad) * Math.tan(sdRad));
+        double HA = Math.toDegrees(Math.acos(HAarg));
+        return HA;
     }
 
     public static double hourAngleSunset(double lat, double solarDec)
@@ -804,6 +921,24 @@ public class AstroUtils {
         double delta = longitude + hourAngle;
         double timeUTC = 720 - (4.0 * delta) - eqTime;    // in minutes
         return timeUTC;
+    }
+
+    public static double moonriseUTC(boolean rise, double jd, double latitude, double longitude) {
+        double t = julianCenturies(jd);
+        double eqTime = equationOfTime(t);
+        double solarDec = moonDeclination(t);
+        double hourAngle = hourAngleSunrise(latitude, solarDec);
+        hourAngle = Math.toDegrees(hourAngle);
+        if (!rise) hourAngle = -hourAngle;
+        double delta = longitude + hourAngle;
+        double timeUTC = 720 - (4.0 * delta) - eqTime;    // in minutes
+        return timeUTC;
+    }
+
+    public static double moonAge(double jd) // days
+    {
+        double begin = ((int)((jd - 2449128.59) / 29.53058867)) * 29.53058867 + 2449128.59;
+        return (jd - begin);// 29.53058867;
     }
 
     public static DateTime sunrise(DateTime date, double latitude, double longitude, double timeZoneOffset)
@@ -846,6 +981,51 @@ public class AstroUtils {
     }
 
 
+    public static DateTime moonrise2(DateTime date, double latitude, double longitude, double timeZoneOffset)
+    {
+        date = date.withTime(0, 0, 0, 0);
+
+        double jd = julianDay(date);
+        //double julianCycle = julianCenturies(date);
+        //double solarNoon = solarNoon(date, longitude, 1);
+        //double solarNoon2 = SiderealTime(julianCycle) / 15.0 - EqOfTime(julianCycle) / 60 + date.Offset.TotalHours - longitude / 15.0;
+        //solarNoon2 /= 24.0;
+
+        double sunriseUTC = moonriseUTC(true, jd, latitude, longitude);
+        double newSunriseUTC = moonriseUTC(true, jd + sunriseUTC/1440.0, latitude, longitude);
+
+//        When the Local Sidereal Time equals the Sun's RA, then the Sun is in the south:
+
+
+
+        //if (true) // newSunriseUTC valid
+        //{
+        double timeLocal = newSunriseUTC +timeZoneOffset * 60;
+
+        double riseT = julianCenturies(jd + newSunriseUTC/1440.0);
+        //double riseAz = calcAzEl(0, riseT, timeLocal, latitude, longitude, timezone)
+
+        //timeLocal += ((dst) ? 60.0 : 0.0);
+        if ( (timeLocal >= 0.0) && (timeLocal < 1440.0) ) {
+            return getDateFromJulianDay(jd, timeLocal);
+        } else  {
+            double jday = jd;
+            double increment = ((timeLocal < 0) ? 1 : -1);
+            while ((timeLocal < 0.0)||(timeLocal >= 1440.0)) {
+                timeLocal += increment * 1440.0;
+                jday -= increment;
+            }
+            return getDateFromJulianDay(jday, timeLocal);
+        }
+        //}
+
+
+        //double ha = HourAngleFromElevation(latitude, sunDeclination(julianCycle), -0.833);
+        //double sunrise = SunriseTimeLST(solarNoon, ha);
+        //return date.Midnight().AddDays(sunrise);
+    }
+
+
     public static DateTime sunset(DateTime date, double latitude, double longitude, double timeZoneOffset)
     {
         date = date.withTime(0, 0, 0, 0);
@@ -878,6 +1058,192 @@ public class AstroUtils {
         }
     }
 
+    public static DateTime moonrise(DateTime date, double latitude, double longitude, int iter)
+    {
+        date = date.withTime(0,0,0,0);
+        double jd = julianDay(date);
+        double jc = julianCenturies(jd);
+        double lst = localMeanSiderealTime(jc, longitude);
+        double radec[] = new double[2];
+        moonEquatorialCoordinates(jc, latitude, longitude, radec);
+        double hourAngleMoonrise = hourAngleMoonrise(latitude, radec[1]); // en degrees
+
+        //double altaz[] = new double[2];
+        //moonHorizontalCoordinates(jc, latitude, longitude, altaz);
+
+        // meridian
+        double tMeridian = (radec[0] - lst) / 15.0; // degrees to hours
+
+        for (int i = 1 ; i < iter; i++)
+        {
+            double jdMeridian = jd + tMeridian/24;
+            double jcMeridian = julianCenturies(jdMeridian);
+            //double decMeridian = moonDeclination(jcMeridian);
+            double raMeridian = moonRightAscension(jcMeridian);
+            double lstMeridian = localMeanSiderealTime(jcMeridian, longitude);
+            //double haMeridian = hourAngleMoonrise(latitude, decMeridian);
+
+            tMeridian = (raMeridian - lst) / 15.0;
+        }
+
+        // rise
+        double tRise = ((radec[0] - lst - hourAngleMoonrise) / 15.0);
+        for (int i = 1 ; i < iter; i++)
+        {
+            double jdRise = jd + tRise/24;
+            double jcRise = julianCenturies(jdRise);
+            double decRise = moonDeclination(jcRise);
+            double raRise = moonRightAscension(jcRise);
+            double haRise = hourAngleMoonrise(latitude, decRise);
+
+            tRise = (raRise - haRise) / 15.0;
+        }
+
+        // set
+        double tSet = ((radec[0] - lst + hourAngleMoonrise) / 15.0);
+        for (int i = 1 ; i < iter; i++)
+        {
+            double jdSet = jd + tSet/24;
+            double jcSet = julianCenturies(jdSet);
+            double decSet = moonDeclination(jcSet);
+            double raSet = moonRightAscension(jcSet);
+            double haSet = hourAngleMoonrise(latitude, decSet);
+
+            tSet = (raSet - haSet) / 15.0;
+        }
+
+        return getDateFromJulianDay(jd + tRise/24);
+    }
+
+    public static double hourAngleMoonrise(double latitude, double declination)
+    {
+        //Under normal atmospheric conditions at sea level, the upper limb of the Moon will
+        // then appear to be tangent with a level, unobstructed horizon. No account is taken
+        //of the Moon's phase; that is, the Moon is always regarded as a disk in the sky and
+        //the upper limb might be dark. Here again, a constant of 34 arcminutes (0.5666 degree)
+        //is used to account for atmospheric refraction. The Moon's apparent radius varies from
+        //15 to 17 arcminutes and its horizontal parallax varies from 54 to 61 arcminutes.
+        //Adding all the terms above together, the center of the Moon at rise or set is geometrically
+        // 5 to 10 arcminutes above the observer's "geocentric horizon" - the horizontal plane
+        //that passes through the Earth's center, orthogonal to the observer's local vertical.
+
+        // 34 arcminutes = 0.5666
+
+        //90.5666 degrees + Moon's apparent angular radius - Moon's horizontal parallax
+
+        //    = 57' [horizontal parallax] - 34'[refraction] -16' [semi-diameter]  + 0° = +7'
+
+        return hourAngleFromElevation(latitude, declination, 7/60.0);
+    }
+
+    /**
+     * Convert RGB components to HSV.
+     * <ul>
+     *   <li><code>radec[0]</code> is Right Ascension \([0..360[\)</li>
+     *   <li><code>radec[1]</code> is Declination \([0...1]\)</li>
+     * </ul>
+     * @param jc  julian centuries
+     * @param latitude  red component value \([0..255]\)
+     * @param longitude  green component value \([0..255]\)
+     * @param radec  2 element array which holds the resulting HSV components.
+     */
+    public static void moonEquatorialCoordinates(double jc,
+                                                 @FloatRange (from = -90, to = 90) double latitude,
+                                                 @FloatRange (from = -180, to = 180) double longitude,
+                                                 @Size(2) double radec[]) {
+        if (radec.length < 2) {
+            throw new RuntimeException("2 components required for decRaHa");
+        }
+
+        double eclipticLatitude = moonEclipticLatitude(jc);
+        double eclipticLongitide = moonEclipticLongitude(jc);
+        double obliquityOfTheEcliptic = obliquityOfTheEcliptic(jc);
+        convertEclipticToEquatorial(eclipticLatitude, eclipticLongitide, obliquityOfTheEcliptic, radec);
+    }
+
+    /**
+     * Convert RGB components to HSV.
+     * <ul>
+     *   <li><code>hsv[0]</code> is Hue \([0..360[\)</li>
+     *   <li><code>hsv[1]</code> is Saturation \([0...1]\)</li>
+     *   <li><code>hsv[2]</code> is Value \([0...1]\)</li>
+     * </ul>
+     * @param latitude  red component value \([0..255]\)
+     * @param longitude  green component value \([0..255]\)
+     * @param altaz  2 element array which holds the resulting HSV components.
+     */
+    public static void moonHorizontalCoordinates(double jc,
+            @FloatRange (from = -90, to = 90) double latitude,
+            @FloatRange (from = -180, to = 180) double longitude,
+            @Size(2) double altaz[]) {
+        if (altaz.length < 2) {
+            throw new RuntimeException("2 components required for decRaHa");
+        }
+
+        double eclipticLatitude = moonEclipticLatitude(jc);
+        double eclipticLongitide = moonEclipticLongitude(jc);
+        double obliquityOfTheEcliptic = obliquityOfTheEcliptic(jc);
+        double localSiderealTime = localMeanSiderealTime(jc, longitude);
+
+        double radec[] = new double[2];
+        convertEclipticToEquatorial(eclipticLatitude, eclipticLongitide, obliquityOfTheEcliptic, radec);
+
+        double rightAscension = radec[0];
+        double declination = radec[1];
+        double hourAngle = localSiderealTime - rightAscension;
+
+        AzEl ho = convertEquatorialToHorizontal(declination, hourAngle, latitude);
+
+        double angle = moonGeocentricDistance(jc);
+        ho.elevation = moonElevationCorrected(angle, ho.elevation);
+
+        altaz[0] = ho.elevation;
+        altaz[1] = ho.azimuth;
+    }
+    /**
+     * Convert ecliptic coordinates to equatorial coordinates.
+     * <ul>
+     *   <li><code>radec[0]</code> is Hue \([0..360[\)</li>
+     *   <li><code>radec[1]</code> is Saturation \([0...1]\)</li>
+     *   <li><code>radec[2]</code> is Value \([0...1]\)</li>
+     * </ul>
+     * @param eclipticLatitude  red component value \([0..255]\)
+     * @param eclipticLongitude  green component value \([0..255]\)
+     * @param radec  3 element array which holds the resulting HSV components.
+     */
+    public static void convertEclipticToEquatorial(double eclipticLatitude, double eclipticLongitude, double obliquityOfTheEcliptic,
+                                                   double[] radec)
+    {
+        double lng = Math.toRadians(eclipticLongitude);
+        double lat = Math.toRadians(eclipticLatitude);
+        double obliq = Math.toRadians(obliquityOfTheEcliptic);
+
+        double sin_obliq = Math.sin(obliq);
+        double cos_obliq = Math.cos(obliq);
+        double sin_lng = Math.sin(lng);
+        double cos_lng = Math.cos(lng);
+
+        double sin_dec = Math.sin(lat) * cos_obliq + Math.cos(lat) * sin_obliq * sin_lng;
+        double dec = Math.asin(sin_dec);
+
+        double num = sin_lng * cos_obliq - Math.tan(lat) * sin_obliq;
+        double tan_ra = num / cos_lng;
+        double ra = cos_lng < 0 ?
+                Math.PI + Math.atan(tan_ra) :
+                num < 0 ?
+                        2 * Math.PI + Math.atan(tan_ra) :
+                        Math.atan(tan_ra);
+
+        radec[0] = Math.toDegrees(ra);
+        radec[1] = Math.toDegrees(dec);
+
+        // ha = local sidereal time - right ascension
+        // ou
+        // ha = Greenwich sidereal time - observer's longitude - right ascension
+
+       // return new RaDec(dec, ra, localSiderealTime - ra);
+    }
+
     /*public static double dayOfYearFromJD(double jd)
     {
         int z = (int)Math.floor(jd + 0.5);
@@ -901,5 +1267,55 @@ public class AstroUtils {
         double doy = Math.floor((275 * month)/9) - k * Math.floor((month + 9)/12) + day -30;
         return doy;
     }*/
+
+    /// <summary>
+    /// Converts a angle from angle unit to another.
+    /// </summary>
+    /// <param name="angle">a double that represents the angle.</param>
+    /// <param name="fromUnits">The angle unit the original angle is in.</param>
+    /// <param name="toUnits">The desired angle unit to convert to.</param>
+    /// <returns>A angle in the new units.</returns>
+    public static double convertAngle(double angle, AngleUnits fromUnits, AngleUnits toUnits)
+    {
+        // Convert the angle to degrees
+        switch (fromUnits)
+        {
+            case Radians:
+                angle = Math.toDegrees(angle);
+                break;
+            case Minutes:
+                angle /= 4.0;
+                break;
+            case Hours:
+                angle *= 15.0;
+                break;
+            case Days:
+                angle *= 360.0;
+                break;
+            case Degrees:
+                break;
+        }
+
+        //Convert from degrees to output angle unit
+        switch (toUnits)
+        {
+            case Radians:
+                angle = Math.toRadians(angle);
+                break;
+            case Minutes:
+                angle *= 4.0;
+                break;
+            case Hours:
+                angle /= 15.0;
+                break;
+            case Days:
+                angle /= 360.0;
+                break;
+            case Degrees:
+                break;
+        }
+
+        return angle;
+    }
 
 }
