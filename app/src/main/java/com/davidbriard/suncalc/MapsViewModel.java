@@ -35,6 +35,7 @@ public class MapsViewModel extends ObservableViewModel {
         mLocation = new LatLng(48.86, 2.34);
         mTimeZone = DateTimeZone.getDefault();
 
+
        // List<String> zones = GetZones("France");
 
     //    AzEl moon = AstroUtils.moonCoords(mDate, 48.86, 2.34, 1);

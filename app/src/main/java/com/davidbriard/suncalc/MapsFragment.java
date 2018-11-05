@@ -32,9 +32,12 @@ import com.davidbriard.suncalc.databinding.FragmentSunAndMoonBinding;
 import com.davidbriard.suncalc.databinding.FragmentTwilightsBinding;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.GoogleMap.OnMapLongClickListener;
+import com.google.android.gms.maps.GoogleMap.OnMarkerDragListener;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -47,7 +50,9 @@ import java.util.Date;
 
 public class MapsFragment extends Fragment implements OnMapReadyCallback,
         GoogleMap.OnMyLocationButtonClickListener,
-        GoogleMap.OnMyLocationClickListener
+        GoogleMap.OnMyLocationClickListener,
+        OnMapLongClickListener,
+        OnMarkerDragListener
 {
     private static final int FINE_LOCATION_PERMISSION_REQUEST = 1;
     private static final int COARSE_LOCATION_PERMISSION_REQUEST = 2;
@@ -153,6 +158,44 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback,
        //mViewModel.getDate().observe(this, nameObserver);
     }
 
+    private void UpdateObserver(LatLng latLng)
+    {
+        mViewModel.setLocation(latLng);
+
+        if (_marker != null)
+            _marker.remove();
+
+        _marker = mMap.addMarker(new MarkerOptions().position(latLng));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 12));
+
+        if (_sunLine != null)
+            _sunLine.remove();
+        if (_moonLine != null)
+            _moonLine.remove();
+
+        LatLng sun = SpatialUtils.destinationCoordinate(latLng, mViewModel.getSunAzimuth(), 100000, DistanceUnits.Meters );
+        LatLng moon = SpatialUtils.destinationCoordinate(latLng, mViewModel.getMoonAzimuth(), 100000, DistanceUnits.Meters );
+
+        _sunLine = mMap.addPolyline(new PolylineOptions()
+                .add(latLng, sun)
+                .width(12)
+                .color(Color.YELLOW));
+
+        _moonLine = mMap.addPolyline(new PolylineOptions()
+                .add(latLng, moon)
+                .width(12)
+                .color(Color.BLUE));
+    }
+
+    @Override
+    public void onMapLongClick(LatLng latLng) {
+        UpdateObserver(latLng);
+    }
+
+    private Polyline _sunLine;
+    private Polyline _moonLine;
+    private Marker _marker;
+
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -168,22 +211,8 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback,
 
         // Add a marker in Sydney and move the camera
         LatLng sydney = mViewModel.getLocation();//new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Paris"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
 
-
-        LatLng sun = SpatialUtils.destinationCoordinate(sydney, mViewModel.getSunAzimuth(), 10000, DistanceUnits.Meters );
-        LatLng moon = SpatialUtils.destinationCoordinate(sydney, mViewModel.getMoonAzimuth(), 10000, DistanceUnits.Meters );
-
-        Polyline line = mMap.addPolyline(new PolylineOptions()
-                .add(sydney, sun)
-                .width(12)
-                .color(Color.YELLOW));
-
-        line = mMap.addPolyline(new PolylineOptions()
-                .add(sydney, moon)
-                .width(12)
-                .color(Color.BLUE));
+        UpdateObserver(sydney);
 
         if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -205,6 +234,7 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback,
         mMap.setMyLocationEnabled(true);
         mMap.setOnMyLocationButtonClickListener(this);
         mMap.setOnMyLocationClickListener(this);
+        mMap.setOnMapLongClickListener(this);
     }
 
     private void findLocation() {
@@ -247,6 +277,22 @@ public class MapsFragment extends Fragment implements OnMapReadyCallback,
         // Return false so that we don't consume the event and the default behavior still occurs
         // (the camera animates to the user's current position).
         return false;
+    }
+
+    @Override
+    public void onMarkerDragStart(Marker marker) {
+
+    }
+
+    @Override
+    public void onMarkerDrag(Marker marker) {
+
+    }
+
+    @Override
+    public void onMarkerDragEnd(Marker marker) {
+
+        UpdateObserver(marker.getPosition());
     }
 
     /*
